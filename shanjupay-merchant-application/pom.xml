@@ -12,6 +12,7 @@
     <artifactId>shanjupay-merchant-application</artifactId>
 
     <dependencies>
+        <!--商户服务API-->
         <dependency>
             <groupId>com.shanjupay</groupId>
             <artifactId>shanjupay-merchant-api</artifactId>

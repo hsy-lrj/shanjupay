@@ -2,10 +2,6 @@ server:
   port: 57010 #启动端口 命令行注入
   max-http-header-size: 100KB
 
-nacos:
-  server:
-    addr: 127.0.0.1:8848
-
 spring:
   application:
     name: merchant-application
@@ -13,12 +9,12 @@ spring:
     allow-bean-definition-overriding: true # Spring Boot 2.1 需要设定
   cloud:
     nacos:
-      discovery:
-        server-addr: ${nacos.server.addr}
-        namespace: 0d2e5c16-f8b8-48df-b880-e646408c5cbb
+      discovery: #服务发现
+        server-addr: 127.0.0.1:8848 # 配置中心地址
+        namespace: 0d2e5c16-f8b8-48df-b880-e646408c5cbb # 命令行注入
         cluster-name: DEFAULT
-      config:
-        server-addr: ${nacos.server.addr} # 配置中心地址
+      config: #配置管理
+        server-addr: 127.0.0.1:8848 # 配置中心地址
         file-extension: yaml
         namespace: 0d2e5c16-f8b8-48df-b880-e646408c5cbb # 命令行注入
         group: SHANJUPAY_GROUP # 聚合支付业务组

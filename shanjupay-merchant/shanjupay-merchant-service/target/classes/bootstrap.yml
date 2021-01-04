@@ -22,10 +22,12 @@ spring:
             refresh: true
             data-id: spring-boot-http.yaml # spring boot http配置
             group: COMMON_GROUP # 通用配置组
-          - refresh: true
+          -
+            refresh: true
             data-id: spring-boot-starter-druid.yaml # spring boot starter druid配置
             group: COMMON_GROUP # 通用配置组
-          - refresh: true
+          -
+            refresh: true
             data-id: spring-boot-mybatis-plus.yaml # spring boot mybatisplus配置
             group: COMMON_GROUP # 通用配置组
 
@@ -49,3 +51,4 @@ dubbo:
 
 logging:
   config: classpath:log4j2.xml
+
