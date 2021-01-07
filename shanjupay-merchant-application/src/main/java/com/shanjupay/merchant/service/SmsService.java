@@ -7,4 +7,11 @@ public interface SmsService {
      * @return 返回的key
      */
     String sendMsg(String phone);
+
+    /**
+     * 校验验证码
+     * @param verifiyKey 发送验证码后返回的key（唯一标识）
+     * @param verifiyCode 验证码
+     */
+    void checkVerifiyCode(String verifiyKey,String verifiyCode);
 }

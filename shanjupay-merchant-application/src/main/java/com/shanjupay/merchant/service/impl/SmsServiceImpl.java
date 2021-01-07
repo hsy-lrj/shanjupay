@@ -30,6 +30,7 @@ public class SmsServiceImpl implements SmsService {
 
     /**
      * 请求服务发送手机验证码
+     *
      * @param phone 手机号
      * @return 返回的key
      */
@@ -87,6 +88,49 @@ public class SmsServiceImpl implements SmsService {
         //获取key并转化成String
         String key = resultMap.get("key").toString();
         return key;
+
+    }
+
+    /**
+     * 校验验证码
+     *
+     * @param verifiyKey  发送验证码后返回的key（唯一标识）
+     * @param verifiyCode 验证码
+     */
+    @Override
+    public void checkVerifiyCode(String verifiyKey, String verifiyCode) {
+        //向校验验证码服务发送请求的地址
+        String url = smsUrl + "/verify?name=sms&verificationCode=" + verifiyCode + "&verificationKey=" + verifiyKey;
+        Map responseMap = null;
+        try {
+            /**
+             * 开始发送post请求
+             * url ：请求的路径
+             * HttpMethod.POST ：请求的类型
+             * HttpEntity.EMPTY ：请求的参数为空
+             * Map.class ：返回值的类型
+             */
+            ResponseEntity<Map> exchange = restTemplate.exchange(url, HttpMethod.POST,HttpEntity.EMPTY, Map.class);
+            //日志信息
+            log.info("调用短信微服务发送验证码: 返回值:{}", JSON.toJSONString(exchange));
+            //获取到返回的信息
+            /**
+             * 返回的json类型：
+             *      {
+             *           "code": 0,
+             *           "msg": "正常",
+             *           "result": true
+             *      }
+             */
+            responseMap = exchange.getBody();
+        } catch (Exception e) {
+            e.printStackTrace();
+            log.info(e.getMessage(), e);
+            throw new RuntimeException("验证码错误");
+        }
+        if (responseMap == null || responseMap.get("result") == null || !(Boolean) responseMap.get("result")) {
+            throw new RuntimeException("验证码错误");
+        }
 
     }
 }
