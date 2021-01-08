@@ -1,6 +1,8 @@
 package com.shanjupay.merchant.service.impl;
 
 import com.alibaba.fastjson.JSON;
+import com.shanjupay.common.domain.BusinessException;
+import com.shanjupay.common.domain.CommonErrorCode;
 import com.shanjupay.merchant.service.SmsService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,11 +67,13 @@ public class SmsServiceImpl implements SmsService {
             responseMap = exchange.getBody();
         } catch (Exception e) {
             log.info(e.getMessage(), e);
-            throw new RuntimeException("发送验证码出错");
+//            throw new RuntimeException("发送验证码出错");
+            throw new BusinessException(CommonErrorCode.E_100102);//改为抛出自定义异常
         }
 
         if (responseMap == null || responseMap.get("result") == null) {//判断是否存在返回的信息
-            throw new RuntimeException("发送验证码出错");
+//            throw new RuntimeException("发送验证码出错");
+            throw new BusinessException(CommonErrorCode.E_100102);//改为抛出自定义异常
         }
         /**
          * 返回的json类型：
@@ -126,10 +130,12 @@ public class SmsServiceImpl implements SmsService {
         } catch (Exception e) {
             e.printStackTrace();
             log.info(e.getMessage(), e);
-            throw new RuntimeException("验证码错误");
+//            throw new RuntimeException("验证码错误");
+            throw new BusinessException(CommonErrorCode.E_100102);//改为抛出自定义异常
         }
         if (responseMap == null || responseMap.get("result") == null || !(Boolean) responseMap.get("result")) {
-            throw new RuntimeException("验证码错误");
+//            throw new RuntimeException("验证码错误");
+            throw new BusinessException(CommonErrorCode.E_100102);//改为抛出自定义异常
         }
 
     }

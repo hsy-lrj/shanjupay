@@ -100,10 +100,11 @@ public enum CommonErrorCode implements ErrorCode {
 
 	E_NO_AUTHORITY(999997,"没有访问权限"),
 	CUSTOM(999998,"自定义异常"),
+
 	/**
 	 * 未知错误
 	 */
-	UNKOWN(999999,"未知错误");
+	UNKNOWN(999999,"未知错误");
 	
 
 	private int code;
