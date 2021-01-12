@@ -7,7 +7,7 @@ import lombok.Data;
 import java.io.Serializable;
 
 /**
- * 用于接收前端提交过来的数据
+ * 用于接收前端传递的商户注册的数据
  */
 @ApiModel(value = "MerchantRegisterVO", description = "商户注册信息")
 @Data
@@ -18,8 +18,6 @@ public class MerchantRegisterVO implements Serializable {
     private String username;
     @ApiModelProperty("商户密码")
     private String password;
-    @ApiModelProperty("验证码的key")
-    private String verifiykey;
     @ApiModelProperty("验证码")
     private String verifiyCode;
 }

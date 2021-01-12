@@ -1,14 +1,24 @@
 package com.shanjupay.merchant.service.impl;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import com.shanjupay.common.domain.BusinessException;
 import com.shanjupay.common.domain.CommonErrorCode;
 import com.shanjupay.merchant.service.SmsService;
+import com.shanjupay.merchant.vo.MerchantRegisterVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.*;
-import org.springframework.stereotype.Service;
+import com.alibaba.fastjson.JSONObject;
+import com.aliyuncs.CommonRequest;
+import com.aliyuncs.CommonResponse;
+import com.aliyuncs.DefaultAcsClient;
+import com.aliyuncs.IAcsClient;
+import com.aliyuncs.http.MethodType;
+import com.aliyuncs.profile.DefaultProfile;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.HashMap;
@@ -18,125 +28,68 @@ import java.util.Map;
 @Slf4j
 public class SmsServiceImpl implements SmsService {
 
+    //注入redis
     @Autowired
-    RestTemplate restTemplate;
-
-    //从Nacos配置文件中获取发送验证码的url地址
-    @Value("${sms.url}")
-    private String smsUrl;
-
-    //从Nacos配置文件中获取验证码的有效期
-    @Value("${sms.effectiveTime}")
-    private String effectiveTime;
-
-
+    private RedisTemplate<String,String> redisTemplate;
     /**
-     * 请求服务发送手机验证码
-     *
-     * @param phone 手机号
-     * @return 返回的key
+     * 从Nacos的merchant-application.yaml配置文件中获取
      */
-    @Override
-    public String sendMsg(String phone) {
-        //向验证码服务发送的请求地址
-        String url = smsUrl + "/generate?name=sms&effectiveTime=" + effectiveTime;//验证码过期时间为600秒
-        log.info("调用短信微服务发送验证码：url:{}", url);
-        //请求体
-        Map<String, Object> body = new HashMap<String, Object>();
-        body.put("mobile", phone);
-        //请求头
-        HttpHeaders httpHeaders = new HttpHeaders();
-        //指定ContentType为APPLICATION_JSON
-        httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-        //封装请求参数 (传入请求头和请求体)
-        HttpEntity entity = new HttpEntity(body, httpHeaders);
-        Map responseMap;
-        try {
-            /**
-             * 开始发送post请求
-             * url ：请求的路径
-             * HttpMethod.POST ：请求的类型
-             * entity ：请求的参数
-             * Map.class ：返回值的类型
-             */
-            ResponseEntity<Map> exchange = restTemplate.exchange(url, HttpMethod.POST, entity,
-                    Map.class);
-            //日志信息
-            log.info("调用短信微服务发送验证码: 返回值:{}", JSON.toJSONString(exchange));
-            //获取到返回的信息
-            responseMap = exchange.getBody();
-        } catch (Exception e) {
-            log.info(e.getMessage(), e);
-//            throw new RuntimeException("发送验证码出错");
-            throw new BusinessException(CommonErrorCode.E_100102);//改为抛出自定义异常
-        }
+    @Value("${oss.aliyun.AccessKeyId}")
+    private String accessKeyId;
+    @Value("${oss.aliyun.AccessKeySecret}")
+    private String accessKeySecret;
+    @Value("${oss.aliyun.SignName}")
+    private String signName;
+    @Value("${oss.aliyun.TemplateCode}")
+    private String templateCode;
 
-        if (responseMap == null || responseMap.get("result") == null) {//判断是否存在返回的信息
-//            throw new RuntimeException("发送验证码出错");
-            throw new BusinessException(CommonErrorCode.E_100102);//改为抛出自定义异常
+    //发送短信的方法
+    @Override
+    public boolean send(Map<String, Object> param, String phone) {
+        if(StringUtils.isEmpty(phone)) return false;
+
+        DefaultProfile profile =
+                DefaultProfile.getProfile("default", accessKeyId, accessKeySecret);
+        IAcsClient client = new DefaultAcsClient(profile);
+
+        //设置相关固定的参数
+        CommonRequest request = new CommonRequest();
+        //request.setProtocol(ProtocolType.HTTPS);
+        request.setMethod(MethodType.POST);//提交方式
+        request.setDomain("dysmsapi.aliyuncs.com");
+        request.setVersion("2017-05-25");
+        request.setAction("SendSms");
+
+        //设置发送相关的参数
+        request.putQueryParameter("PhoneNumbers",phone); //设置要发送的手机号
+        request.putQueryParameter("SignName",signName); //申请阿里云的签名名称
+        request.putQueryParameter("TemplateCode",templateCode); //申请阿里云的模板code
+        request.putQueryParameter("TemplateParam", JSONObject.toJSONString(param)); //验证码数据，需要转换json数据进行传递
+
+        try {
+            //进行发送
+            CommonResponse response = client.getCommonResponse(request);
+            //返回boolean类型为发送是否成功
+            return response.getHttpResponse().isSuccess();
+        }catch(Exception e) {
+            e.printStackTrace();
+            return false;
         }
-        /**
-         * 返回的json类型：
-         *  {
-         *      "code": 0,
-         *      "msg": "string",
-         *      "result": {
-         *          "content": "string",
-         *          "key": "string"
-         *      }
-         *  }
-         *
-         */
-        //获取result集合
-        Map resultMap = (Map) responseMap.get("result");
-        //获取key并转化成String
-        String key = resultMap.get("key").toString();
-        return key;
 
     }
 
     /**
      * 校验验证码
-     *
-     * @param verifiyKey  发送验证码后返回的key（唯一标识）
-     * @param verifiyCode 验证码
+     * @param merchantRegisterVO 用户传入的数据
      */
     @Override
-    public void checkVerifiyCode(String verifiyKey, String verifiyCode) {
-        //向校验验证码服务发送请求的地址
-        String url = smsUrl + "/verify?name=sms&verificationCode=" + verifiyCode + "&verificationKey=" + verifiyKey;
-        Map responseMap = null;
-        try {
-            /**
-             * 开始发送post请求
-             * url ：请求的路径
-             * HttpMethod.POST ：请求的类型
-             * HttpEntity.EMPTY ：请求的参数为空
-             * Map.class ：返回值的类型
-             */
-            ResponseEntity<Map> exchange = restTemplate.exchange(url, HttpMethod.POST,HttpEntity.EMPTY, Map.class);
-            //日志信息
-            log.info("调用短信微服务发送验证码: 返回值:{}", JSON.toJSONString(exchange));
-            //获取到返回的信息
-            /**
-             * 返回的json类型：
-             *      {
-             *           "code": 0,
-             *           "msg": "正常",
-             *           "result": true
-             *      }
-             */
-            responseMap = exchange.getBody();
-        } catch (Exception e) {
-            e.printStackTrace();
-            log.info(e.getMessage(), e);
-//            throw new RuntimeException("验证码错误");
-            throw new BusinessException(CommonErrorCode.E_100102);//改为抛出自定义异常
+    public void checkVerifiyCode(MerchantRegisterVO merchantRegisterVO) {
+        //获取redis中保存的验证码(key是手机号)
+        String code = redisTemplate.opsForValue().get(merchantRegisterVO.getMobile());
+        //获取用户输入的验证码
+        String verifiyCode = merchantRegisterVO.getVerifiyCode();
+        if (!code.equalsIgnoreCase(verifiyCode)){
+            throw new BusinessException(CommonErrorCode.E_100107);
         }
-        if (responseMap == null || responseMap.get("result") == null || !(Boolean) responseMap.get("result")) {
-//            throw new RuntimeException("验证码错误");
-            throw new BusinessException(CommonErrorCode.E_100102);//改为抛出自定义异常
-        }
-
     }
 }
