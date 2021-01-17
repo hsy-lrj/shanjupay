@@ -12,8 +12,6 @@ public class AppDTO implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private Long id;
-
     private String appId;
 
     @ApiModelProperty(value = "商店名称")
