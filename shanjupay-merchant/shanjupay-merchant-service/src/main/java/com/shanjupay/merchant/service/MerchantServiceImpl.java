@@ -52,10 +52,8 @@ public class MerchantServiceImpl implements MerchantService {
     @Override
     public MerchantDTO queryMerchantById(Long merchantId) {
         Merchant merchant = merchantMapper.selectById(merchantId);
-        MerchantDTO merchantDTO = new MerchantDTO();
-        merchantDTO.setId(merchant.getId());
-        merchantDTO.setMerchantName(merchant.getMerchantName());
-        //设置其它属性...
+        //使用对象转化器进行转化
+        MerchantDTO merchantDTO = MerchantCovert.INSTANCE.merchant2merchantDTO(merchant);
         return merchantDTO;
     }
 
@@ -111,7 +109,7 @@ public class MerchantServiceImpl implements MerchantService {
         //如果租户在SaaS已经存在，SaaS直接 返回此租户的信息，否则进行添加
         TenantDTO tenantAndAccount = tenantService.createTenantAndAccount(createTenantRequestDTO);
         //获取租户的id
-        if (tenantAndAccount==null||tenantAndAccount.getId()==null){
+        if (tenantAndAccount == null || tenantAndAccount.getId() == null) {
             throw new BusinessException(CommonErrorCode.E_200012);
         }
         //租户id
@@ -120,7 +118,7 @@ public class MerchantServiceImpl implements MerchantService {
         Integer count1 = merchantMapper.selectCount(
                 new LambdaQueryWrapper<Merchant>().eq(Merchant::getTenantId, tenantId)
         );
-        if (count1>0){
+        if (count1 > 0) {
             throw new BusinessException(CommonErrorCode.E_200017);
         }
         //使用对象转化器进行转化
@@ -146,7 +144,7 @@ public class MerchantServiceImpl implements MerchantService {
         staffDTO.setStaffStatus(true);//员工的状态：启用
         StaffDTO staff = createStaff(staffDTO);
         //为门店设置管理员
-        bindStaffToStore(store.getId(),staff.getId());
+        bindStaffToStore(store.getId(), staff.getId());
         return MerchantCovert.INSTANCE.merchant2merchantDTO(merchant);
     }
 
@@ -245,6 +243,22 @@ public class MerchantServiceImpl implements MerchantService {
         storeStaff.setStaffId(staffId);
         storeStaff.setStoreId(storeId);
         storeStaffMapper.insert(storeStaff);
+    }
+
+    /**
+     * 根据商户id查询租户信息
+     *
+     * @param tenantId
+     * @return
+     */
+    @Override
+    public MerchantDTO queryMerchantByTenantId(Long tenantId) {
+        Merchant merchant = merchantMapper.selectOne(
+                new LambdaQueryWrapper<Merchant>()
+                        .eq(Merchant::getTenantId, tenantId));
+        //使用对象转化器进行转化
+        MerchantDTO merchantDTO = MerchantCovert.INSTANCE.merchant2merchantDTO(merchant);
+        return merchantDTO;
     }
 
     /**

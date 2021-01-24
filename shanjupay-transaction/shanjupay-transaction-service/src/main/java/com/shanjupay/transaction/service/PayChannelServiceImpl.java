@@ -106,7 +106,7 @@ public class PayChannelServiceImpl implements PayChannelService {
      */
     @Override
     public List<PayChannelDTO> queryPayChannelByPlatformChannel(String platformChannelCode) throws BusinessException {
-        return platformPayChannelMapper.selectPayChannelByPlatformChannel(platformChannelCode);
+        return platformChannelMapper.selectPayChannelByPlatformChannel(platformChannelCode);
     }
 
     /**

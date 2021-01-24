@@ -1,9 +1,9 @@
 package com.shanjupay.merchant.controller;
 
 import com.shanjupay.common.util.RandomUtil;
-import com.shanjupay.common.util.SecurityUtil;
 import com.shanjupay.merchant.api.MerchantService;
 import com.shanjupay.merchant.api.dto.MerchantDTO;
+import com.shanjupay.merchant.common.util.SecurityUtil;
 import com.shanjupay.merchant.covert.MerchantDetailConvert;
 import com.shanjupay.merchant.covert.MerchantRegisterConvert;
 import com.shanjupay.merchant.service.FileService;
@@ -14,10 +14,8 @@ import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
-import org.apache.dubbo.config.annotation.Reference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -27,7 +25,6 @@ import java.io.IOException;
 import java.sql.BatchUpdateException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @RestController
@@ -41,6 +38,19 @@ public class MerchantController {
     private FileService fileService;
     @Autowired
     private RedisTemplate<String, String> redisTemplate;
+
+    /**
+     * 获取登录用户的商户信息
+     *
+     * @return
+     */
+    @ApiOperation("获取登录用户的商户信息")
+    @GetMapping(value = "/my/merchants")
+    public MerchantDTO getMyMerchantInfo() {
+        Long merchantId = SecurityUtil.getMerchantId();
+        MerchantDTO merchantDTO = merchantService.queryMerchantById(merchantId);
+        return merchantDTO;
+    }
 
     /**
      * 发送短信验证码(使用阿里云)
@@ -104,6 +114,7 @@ public class MerchantController {
 
     /**
      * 商户资质申请
+     *
      * @param merchantDetailVO 前端传递的信息
      */
     @ApiOperation("商户资质申请")
@@ -117,7 +128,7 @@ public class MerchantController {
         Long merchantId = SecurityUtil.getMerchantId();
         MerchantDTO merchantDTO = MerchantDetailConvert.INSTANCE.vo2dto(merchantDetailVO);
         //开始进行资质申请
-        merchantService.applyMerchant(merchantId,merchantDTO);
+        merchantService.applyMerchant(merchantId, merchantDTO);
     }
 
     @GetMapping("/merchants/{id}")
